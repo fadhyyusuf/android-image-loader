@@ -52,7 +52,7 @@ publishing {
             }
             groupId = "com.github.fadhyyusuf"
             artifactId = "image-loader"
-            version = "1.0.2"
+            version = "1.0.3"
         }
     }
 }
