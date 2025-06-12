@@ -20,7 +20,6 @@ object ImageLoader {
         // Enable networking on main thread for simplicity (not recommended for prod)
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().permitAll().build())
 
-        // Overlay container
         val overlay = FrameLayout(activity).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -29,7 +28,6 @@ object ImageLoader {
             setBackgroundColor(Color.parseColor("#CC000000"))
         }
 
-        // ImageView with zoom support
         val imageView = ZoomableImageView(activity).apply {
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -39,22 +37,18 @@ object ImageLoader {
             scaleType = ImageView.ScaleType.MATRIX
         }
 
-        // Load Bitmap
-        // Inside loadNativeZoomableImage(...)
         val bitmap = try {
             when {
                 pathOrUrl.startsWith("http") -> {
                     val url = URL(pathOrUrl)
                     BitmapFactory.decodeStream(url.openConnection().getInputStream())
                 }
-
                 pathOrUrl.startsWith("content://") -> {
                     val uri = android.net.Uri.parse(pathOrUrl)
                     activity.contentResolver.openInputStream(uri)?.use {
                         BitmapFactory.decodeStream(it)
                     }
                 }
-
                 else -> {
                     BitmapFactory.decodeFile(File(pathOrUrl).absolutePath)
                 }
@@ -64,15 +58,59 @@ object ImageLoader {
             null
         }
 
-
-        if (bitmap == null) {
-            // show nothing if failed to load
-            return
-        }
+        if (bitmap == null) return
 
         imageView.setImageBitmap(bitmap)
 
-        // Close button
+        val closeButton = ImageButton(activity).apply {
+            layoutParams = FrameLayout.LayoutParams(100, 100, Gravity.TOP or Gravity.END).apply {
+                setMargins(32, 32, 32, 32)
+            }
+            setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+            setBackgroundColor(Color.TRANSPARENT)
+            setColorFilter(Color.WHITE)
+        }
+
+        closeButton.setOnClickListener {
+            rootView.removeView(overlay)
+        }
+
+        overlay.addView(imageView)
+        overlay.addView(closeButton)
+        rootView.addView(overlay)
+    }
+
+    fun openImageLoader(activity: Activity, imageBytes: ByteArray) {
+        val rootView = activity.findViewById<ViewGroup>(android.R.id.content)
+
+        val overlay = FrameLayout(activity).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(Color.parseColor("#CC000000"))
+        }
+
+        val imageView = ZoomableImageView(activity).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER
+            )
+            scaleType = ImageView.ScaleType.MATRIX
+        }
+
+        val bitmap = try {
+            BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+        if (bitmap == null) return
+
+        imageView.setImageBitmap(bitmap)
+
         val closeButton = ImageButton(activity).apply {
             layoutParams = FrameLayout.LayoutParams(100, 100, Gravity.TOP or Gravity.END).apply {
                 setMargins(32, 32, 32, 32)
